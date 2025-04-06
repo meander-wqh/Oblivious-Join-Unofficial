@@ -15,8 +15,10 @@ public:
         btree_time = 0.0;
         /***********************/
         
-        btree = new ObliviousBTree <T>* [this->nInputs];
+        // 一个table有一个btree，生成的是指针，一共有nInputs个table
+        btree = new ObliviousBTree <T>* [this->nInputs]; 
         for (uint32_t i = 0; i < this->nInputs; ++i) {
+            //生成table
             generateInputSchema(mode, i, &(this->in_sch[i]));
             
             std::string cur_dst = dst + "_input_" + std::to_string(i);

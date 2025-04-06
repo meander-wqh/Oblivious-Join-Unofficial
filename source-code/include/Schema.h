@@ -22,9 +22,13 @@ struct CMP {
     uint8_t order[MAX_CMPS];  //0: ascending; 1: descending
 };
 
+/*
+一个Schema 是一个数据库对象，也可能是一个table, 其中item_size是一行数据的大小
+
+*/
 struct Schema {
     uint32_t nAttrs;
-    uint32_t item_size;
+    uint32_t item_size; 
     uint32_t item_per_blk;
     uint32_t attrName[MAX_COLS]; // Table ID (higher 16 bits) + Attribute ID (lower 16 bits)
     uint32_t attrOffset[MAX_COLS];

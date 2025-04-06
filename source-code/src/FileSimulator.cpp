@@ -2,6 +2,9 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
+/*
+    
+*/
 FileSimulator::FileSimulator(const std::string& url, const std::string& collection_name, const bool create, const uint32_t block_size)
         :url(url), collection_name(collection_name), block_size(block_size) {
     if (create) {

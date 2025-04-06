@@ -109,11 +109,12 @@ public:
         // Import Data Blocks
         printf("\n-------------------------------------\n");
         std::unordered_map <uint32_t, std::string> blocks;
+        // blocks store the data
         importData(mode, scale, table_id, sch, blocks);
         block_num = blocks.size();
         printf("Total # of data blocks required: %u\n", block_num);
         
-        // Build ORAM for Data Blocks
+        // Build ORAM for Data Blocks, 给data block维护了一个oram，还没有给索引维护oram
         std::unordered_map <uint32_t, std::string> data_blocks = blocks;
         std::string data_in_dst = in_dst + "_data";
         std::string data_in_prefix = in_prefix + "_data";

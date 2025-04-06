@@ -18,9 +18,14 @@
 #include <unordered_set>
 #include <unordered_map>
 
-// mode: 0: rankings&uservisits; 1: TPC-H; 2: twitter
+/*
+mode: 指定使用哪个数据集，0: rankings&uservisits; 1: TPC-H; 2: twitter
+
+return: 返回这个数据集会生成的table数量
+*/ 
 uint32_t getTableNum(const uint32_t mode) {
     const uint32_t n_mode = 3;
+    // rankings 有3个tables, TPC-H有9个，twitter有4个
     const uint32_t table_num[n_mode] = {3, 9, 4};
     return table_num[mode];
 }
@@ -32,6 +37,10 @@ std::string getCollectionPrefix(uint32_t mode, const std::string method, const s
     return predix;
 }
 
+
+/*
+
+*/
 std::string getCollectionPrefix(const uint32_t mode, const std::string method, const std::string scale, const uint32_t outsourced_height) {
     const uint32_t n_mode = 3;
     const std::string file_prefix[n_mode] = {"rankings_uservisits", "tpch", "twitter"};
@@ -50,10 +59,19 @@ void getFileName(const uint32_t mode, const std::string scale, const uint32_t ta
     input_file = data_prefix + file_prefix[mode] + file_name[mode][table_id] + '_' + scale + '.' + file_suffix[mode];
 }
 
+/*
+    [Input]: 
+        mode: dataset
+        table_id: which table
+        sch: the pointer of schema
+    [Return]:
+        updated sch
+*/
 void generateInputSchema(const uint32_t mode, const uint32_t table_id, Schema* sch, const bool ods = false) {
     uint32_t nAttrs[MAX_TBLS];
     ATTR_TYPE inAttr[MAX_TBLS][MAX_COLS];
     uint32_t inLen[MAX_TBLS][MAX_COLS];
+    // table num = file num
     const uint32_t tot_file_num = getTableNum(mode);
     if (mode == 0) {
         const uint32_t n_attrs[tot_file_num] {4, 10, 10};
@@ -67,7 +85,9 @@ void generateInputSchema(const uint32_t mode, const uint32_t table_id, Schema* s
         memcpy(inLen[0], in_len[0], tot_file_num * MAX_COLS * sizeof(uint32_t));
     }
     else if (mode == 1) {
+        // The number of attributes of each table
         const uint32_t n_attrs[tot_file_num] {8, 10, 6, 9, 10, 17, 5, 4, 5};
+        // The attributes of each table
         ATTR_TYPE in_attr[tot_file_num][MAX_COLS] {{CHAR, INTEGER, STRING, TINYTEXT, INTEGER, STRING, DOUBLE, TINYTEXT},
             {CHAR, INTEGER, TINYTEXT, STRING, STRING, TINYTEXT, INTEGER, TINYTEXT, DOUBLE, TINYTEXT},
             {CHAR, INTEGER, INTEGER, INTEGER, DOUBLE, TINYTEXT},
@@ -76,6 +96,7 @@ void generateInputSchema(const uint32_t mode, const uint32_t table_id, Schema* s
             {CHAR, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, DOUBLE, DOUBLE, DOUBLE, CHAR, CHAR, STRING, STRING, STRING, TINYTEXT, TINYTEXT, TINYTEXT},
             {CHAR, INTEGER, TINYTEXT, INTEGER, TINYTEXT}, {CHAR, INTEGER, TINYTEXT, TINYTEXT},
             {CHAR, INTEGER, TINYTEXT, INTEGER, TINYTEXT}};
+        // The attributes length?
         uint32_t in_len[tot_file_num][MAX_COLS] {{1, 4, 18, 40, 4, 15, 8, 100},
             {1, 4, 54, 14, 8, 25, 4, 10, 8, 22}, {1, 4, 4, 4, 8, 198},
             {1, 4, 18, 40, 4, 15, 8, 10, 116}, {1, 4, 4, 1, 8, 10, 15, 15, 1, 78},
@@ -239,6 +260,8 @@ void getInputItemNum(const uint32_t mode, const std::string scale, const uint32_
     real_item_num = input_item_num[first];
 }
 
+
+// 
 void generateIndexInfo(const uint32_t mode, const uint32_t table_id, uint32_t& index_num, uint32_t* &index_ids) {
     uint32_t index = table_id;
     const uint32_t tot_file_num = getTableNum(mode);
@@ -299,12 +322,15 @@ void importData(const std::string& in_file, const Schema* sch, std::unordered_ma
     while (fgets(line, plain_len, fp) != NULL) {
         char* start = line;
         char* pAttr = pItem;
+        //对每一列
         for (uint32_t l = 1; l < sch->nAttrs; ++l) {
             char* next = NULL;
+            // 切分出每一列，strchr用于在字符串中查找指定字符的首次出现位置
             if (l < sch->nAttrs - 1)
                 next = strchr(start, split_char);
             else next = strchr(start, end_char);
             
+            //修改pAtter指向地址的内容，就相当于修改了pItem
             if (sch->attrType[l] == CHAR) {
                 *pAttr = *start;
                 ++pAttr;
@@ -334,25 +360,30 @@ void importData(const std::string& in_file, const Schema* sch, std::unordered_ma
                 start = next;
             }
         }
+        // 加上该行数据 
         value += std::string(item, sch->item_size);
         ++item_num;
+        // 一个block有一个数据个数上限item_per_blk, 如果超过了这个上限，就要封装成一个block
         if (item_num >= sch->item_per_blk) {
+            // 在value前面加了一个item_num
             value = std::string((const char*)&item_num, sizeof(uint32_t)) + value;
+            // 如果是 ODS, 在前面加一个范围
             if (ods) {
                 uint32_t current_pos = rand_int(n_blocks);
                 value = std::string((const char*)&current_pos, sizeof(uint32_t)) + value;
             }
             int32_t tmp_len = value_size - value.length();
-            assert(tmp_len >= 0);
-            if (tmp_len > 0) value += generate_random_block(tmp_len);
-            blocks[block_id] = value;
+            assert(tmp_len >= 0); // 检查value剩下的长度
+            if (tmp_len > 0) value += generate_random_block(tmp_len); //在后面拼接随机值
+            blocks[block_id] = value; //封装成一个block
             ++block_id;
             item_num = 0;
             value = "";
         }
     }
     fclose(fp);
-    
+
+    //至此，封装了很多block，可能有一些数据不足一个block的量没有被封装到一个block中，方法是先生成一个随机的block，之后将item拷贝到这个随机的blcok中，最后再补齐到4080
     if (item_num > 0) {
         item[0] = 'd';
         for (uint32_t j = item_num; j < sch->item_per_blk; ++j) {
@@ -481,6 +512,10 @@ void importData(const std::string& in_file, const Schema* sch, std::unordered_ma
     }
 }
 
+
+/*
+    [Return]: generate the data blocks "std::unordered_map <uint32_t, std::string>& blocks" from the input dataset, each block's size is 4KB, and contains several items(row of table)
+*/
 void importData(const uint32_t mode, const std::string scale, const uint32_t table_id, const Schema* sch, std::unordered_map <uint32_t, std::string>& blocks, const bool ods = false, const uint32_t n_blocks = 0) {
     std::string in_file;
     getFileName(mode, scale, table_id, in_file);

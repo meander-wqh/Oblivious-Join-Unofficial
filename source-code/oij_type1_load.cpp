@@ -5,6 +5,7 @@
 #include "ObliIndexJoin.h"
 #include "PathORAM.h"
 
+//bash scripts/run_oij_type1_load.sh 1 0.05x 1
 int main(int argc, char* argv[]) {
     if (argc != 4) {
         printf("Usage: ./oij_type1_load <mode> <scale> <outsourced_height>\n");
@@ -18,6 +19,7 @@ int main(int argc, char* argv[]) {
     std::string prefix = getCollectionPrefix(mode, method, scale, outsourced_height);
     std::string dst = "oram." + prefix;
     std::string meta_prefix = "metas/" + prefix;
+    std::cout<<"prefix: "<<prefix<<std::endl;
     
     auto start = std::chrono::high_resolution_clock::now();
     ObliIndexJoin <PathORAM>* oij = new ObliIndexJoin <PathORAM> (mode, scale, outsourced_height, dst, meta_prefix);

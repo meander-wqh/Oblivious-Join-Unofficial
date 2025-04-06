@@ -63,17 +63,23 @@ PathORAM::PathORAM(const uint32_t& n, const char* dst, const char* output, const
     fclose(fp);
 }
 
+/*
+    [Input]: 
+        blocks: data blocks contains several items
+    [Output]:
+        a pathoram object
+*/
 PathORAM::PathORAM(std::unordered_map<uint32_t, std::string>& blocks, const char* dst, const char* output, const bool& pos_host) {
-    uint32_t n = blocks.size();
-    height = (uint32_t)ceil(log2((double)n)) + 1;
-    n_blocks = (uint32_t)1 << (height - 1);
+    uint32_t n = blocks.size(); // 
+    height = (uint32_t)ceil(log2((double)n)) + 1; // the height of path oram
+    n_blocks = (uint32_t)1 << (height - 1); // the blocks in path oram
     stash.clear();
     conn = new FileSimulator(server_host, dst, true);
     
-    key = new byte[key_size];
-    std::string rnd_str = generate_random_block(key_size);
-    memcpy(key, rnd_str.c_str(), key_size);
-    sbuffer = new std::string[height * PathORAM_Z];
+    key = new byte[key_size]; // 初始化一个长度为32B的key
+    std::string rnd_str = generate_random_block(key_size); 
+    memcpy(key, rnd_str.c_str(), key_size); // 随机化这个key
+    sbuffer = new std::string[height * PathORAM_Z]; // PathORAM_Z = 4, 一个bucket内有4个block，sbuffer存一个路径吗？
     
     if (pos_host) {
         pos_map = new std::unordered_map<uint32_t, uint32_t>;

@@ -14,6 +14,10 @@ double rand_real(const double &min, const double &max) {
     return distribution(generator_);
 };
 
+/*
+    [Input]: a range n
+    [Output]: a random int
+*/
 size_t rand_int(const size_t& n) {
     static thread_local std::random_device random_device_;
     static thread_local std::mt19937 generator_(random_device_());
